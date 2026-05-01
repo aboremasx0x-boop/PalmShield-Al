@@ -1,0 +1,10 @@
+streamlit
+scikit-learn
+numpy
+scipy
+matplotlib
+joblib
+pandas
+reportlab
+arabic-reshaper
+python-bidi
