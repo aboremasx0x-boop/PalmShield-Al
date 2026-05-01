@@ -32,11 +32,26 @@ def ar(text):
     return get_display(arabic_reshaper.reshape(str(text)))
 
 
+def get_available_font():
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/tahoma.ttf",
+    ]
+
+    for path in font_paths:
+        if os.path.exists(path):
+            return path
+
+    raise FileNotFoundError("No suitable font found for PDF generation")
+
+
 def create_pdf_report(palm_id, result, confidence, risk, recommendation, baseline_delta):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
 
-    font_path = "C:/Windows/Fonts/arial.ttf"
+    font_path = get_available_font()
     pdfmetrics.registerFont(TTFont("ArabicFont", font_path))
 
     style = ParagraphStyle(
