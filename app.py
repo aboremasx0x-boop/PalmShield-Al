@@ -25,6 +25,7 @@ from features import extract_features
 MODEL_PATH = "models/palmshield_model.joblib"
 BASELINE_FILE = "baseline.csv"
 HISTORY_FILE = "history.csv"
+DATASET_URL = "https://drive.google.com/drive/folders/1HCG8jf-_aqv8nvvyoevufK-xAeb6rXlk?usp=sharing"
 
 
 def ar(text):
@@ -175,6 +176,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.sidebar.title("PalmShield AI")
+
+st.sidebar.markdown("### 📂 Dataset")
+st.sidebar.markdown(
+    f"[⬇️ تحميل بيانات التجربة من Google Drive]({DATASET_URL})"
+)
+
 lang = st.sidebar.selectbox("Language / اللغة", ["العربية", "English"])
 
 if lang == "العربية":
@@ -203,7 +210,7 @@ st.subheader(subtitle)
 st.write(intro)
 
 if not os.path.exists(MODEL_PATH):
-    st.error("Model not found. Run: python generate_synthetic_rpw_audio.py ثم python train_model.py")
+    st.error("Model not found. تأكد من رفع ملف النموذج داخل models/palmshield_model.joblib")
     st.stop()
 
 model = joblib.load(MODEL_PATH)
@@ -230,12 +237,16 @@ with col1:
         ]
         uploaded_files = [open(p, "rb") for p in demo_paths if os.path.exists(p)]
 
+        if not uploaded_files:
+            st.warning("ملفات التجربة غير موجودة داخل التطبيق. يمكنك تحميلها من رابط Google Drive في القائمة الجانبية ثم رفع ملف WAV يدويًا.")
+
 with col2:
     st.markdown("### Project Value / قيمة المشروع")
     st.markdown("""
     <div class='card'>
     <b>Innovation:</b> Bioacoustics + AI + Baseline Tracking<br>
     <b>New Feature:</b> Multi-recording voting<br>
+    <b>Dataset:</b> External Google Drive sample data<br>
     <b>Impact:</b> Early detection, lower pesticide use, palm protection
     </div>
     """, unsafe_allow_html=True)
@@ -401,7 +412,7 @@ if uploaded_files:
 
     st.markdown("### Hackathon Pitch / ملخص العرض")
     st.info(
-        "PalmShield AI is not just a one-time detector. It tracks each palm over time using baseline comparison, multi-recording voting, and automated reports for field decision-making."
+        "PalmShield AI is not just a one-time detector. It tracks each palm over time using baseline comparison, multi-recording voting, automated reports, and external sample data access."
     )
 
     for p in temp_paths:
