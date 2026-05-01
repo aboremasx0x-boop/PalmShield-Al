@@ -22,9 +22,11 @@ from bidi.algorithm import get_display
 
 from features import extract_features
 
+
 MODEL_PATH = "models/palmshield_model.joblib"
 BASELINE_FILE = "baseline.csv"
 HISTORY_FILE = "history.csv"
+
 DATASET_URL = "https://drive.google.com/drive/folders/1HCG8jf-_aqv8nvvyoevufK-xAeb6rXlk?usp=sharing"
 
 
@@ -34,8 +36,11 @@ def ar(text):
 
 def get_available_font():
     font_paths = [
+        "fonts/Amiri-Regular.ttf",
+        "Amiri-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
         "C:/Windows/Fonts/arial.ttf",
         "C:/Windows/Fonts/tahoma.ttf",
     ]
@@ -44,7 +49,7 @@ def get_available_font():
         if os.path.exists(path):
             return path
 
-    raise FileNotFoundError("No suitable font found for PDF generation")
+    return None
 
 
 def create_pdf_report(palm_id, result, confidence, risk, recommendation, baseline_delta):
@@ -52,11 +57,22 @@ def create_pdf_report(palm_id, result, confidence, risk, recommendation, baselin
     doc = SimpleDocTemplate(buffer, pagesize=A4)
 
     font_path = get_available_font()
-    pdfmetrics.registerFont(TTFont("ArabicFont", font_path))
+
+    if font_path:
+        pdfmetrics.registerFont(TTFont("CustomFont", font_path))
+        font_name = "CustomFont"
+
+        def format_text(text):
+            return ar(text)
+    else:
+        font_name = "Helvetica"
+
+        def format_text(text):
+            return str(text)
 
     style = ParagraphStyle(
-        name="ArabicStyle",
-        fontName="ArabicFont",
+        name="ReportStyle",
+        fontName=font_name,
         fontSize=12,
         leading=20,
         alignment=2
@@ -64,7 +80,7 @@ def create_pdf_report(palm_id, result, confidence, risk, recommendation, baselin
 
     title_style = ParagraphStyle(
         name="TitleStyle",
-        fontName="ArabicFont",
+        fontName=font_name,
         fontSize=18,
         leading=24,
         alignment=1
@@ -77,31 +93,31 @@ def create_pdf_report(palm_id, result, confidence, risk, recommendation, baselin
     content.append(Paragraph("Early Acoustic Detection of Red Palm Weevil", title_style))
     content.append(Spacer(1, 24))
 
-    content.append(Paragraph(ar(f"التاريخ: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"), style))
-    content.append(Paragraph(ar(f"رقم النخلة: {palm_id}"), style))
-    content.append(Paragraph(ar(f"النتيجة: {result}"), style))
-    content.append(Paragraph(ar(f"نسبة الثقة: {confidence:.1f}%"), style))
-    content.append(Paragraph(ar(f"مستوى الخطورة: {risk}"), style))
-    content.append(Paragraph(ar(f"التغير عن المرجع: {baseline_delta}"), style))
+    content.append(Paragraph(format_text(f"التاريخ: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"), style))
+    content.append(Paragraph(format_text(f"رقم النخلة: {palm_id}"), style))
+    content.append(Paragraph(format_text(f"النتيجة: {result}"), style))
+    content.append(Paragraph(format_text(f"نسبة الثقة: {confidence:.1f}%"), style))
+    content.append(Paragraph(format_text(f"مستوى الخطورة: {risk}"), style))
+    content.append(Paragraph(format_text(f"التغير عن المرجع: {baseline_delta}"), style))
 
     content.append(Spacer(1, 20))
 
-    content.append(Paragraph(ar("التوصية الذكية:"), style))
-    content.append(Paragraph(ar(recommendation), style))
+    content.append(Paragraph(format_text("التوصية الذكية:"), style))
+    content.append(Paragraph(format_text(recommendation), style))
 
     content.append(Spacer(1, 20))
 
-    content.append(Paragraph(ar("ملخص التشخيص:"), style))
+    content.append(Paragraph(format_text("ملخص التشخيص:"), style))
     content.append(Paragraph(
-        ar("يعتمد هذا التقرير على تحليل صوتي بالذكاء الاصطناعي لتقدير احتمالية إصابة النخلة بسوسة النخيل الحمراء."),
+        format_text("يعتمد هذا التقرير على تحليل صوتي بالذكاء الاصطناعي لتقدير احتمالية إصابة النخلة بسوسة النخيل الحمراء."),
         style
     ))
 
     content.append(Spacer(1, 20))
 
-    content.append(Paragraph(ar("ملاحظة مهمة:"), style))
+    content.append(Paragraph(format_text("ملاحظة مهمة:"), style))
     content.append(Paragraph(
-        ar("هذا التقرير صادر من نموذج أولي للعرض، ويجب تأكيد النتائج لاحقًا بفحص ميداني وتسجيلات صوتية حقيقية."),
+        format_text("هذا التقرير صادر من نموذج أولي للعرض، ويجب تأكيد النتائج لاحقًا بفحص ميداني وتسجيلات صوتية حقيقية."),
         style
     ))
 
@@ -132,6 +148,7 @@ def save_history(palm_id, result, confidence, risk, baseline_delta):
 
 def save_baseline(palm_id, features_vector):
     data = {"palm_id": palm_id}
+
     for i, value in enumerate(features_vector):
         data[f"f{i}"] = value
 
@@ -316,6 +333,7 @@ if uploaded_files:
 
         with r1:
             st.error(result_text)
+
     else:
         result_text = healthy
         risk = "آمن"
@@ -339,6 +357,7 @@ if uploaded_files:
     st.divider()
 
     st.markdown("## Baseline / المرجع الصوتي")
+
     if baseline_features is None:
         st.warning("لا يوجد مرجع صوتي لهذه النخلة. يمكنك حفظ التسجيل الحالي كمرجع إذا كانت النخلة سليمة.")
     else:
@@ -387,21 +406,26 @@ if uploaded_files:
 
     save_history(palm_id, result_text, confidence, risk, baseline_delta)
 
-    pdf_report = create_pdf_report(
-        palm_id=palm_id,
-        result=result_text,
-        confidence=confidence,
-        risk=risk,
-        recommendation=recommendation,
-        baseline_delta=baseline_delta
-    )
+    try:
+        pdf_report = create_pdf_report(
+            palm_id=palm_id,
+            result=result_text,
+            confidence=confidence,
+            risk=risk,
+            recommendation=recommendation,
+            baseline_delta=baseline_delta
+        )
 
-    st.download_button(
-        label="Download PDF Report / تحميل التقرير PDF",
-        data=pdf_report,
-        file_name=f"PalmShield_Report_{palm_id}.pdf",
-        mime="application/pdf"
-    )
+        st.download_button(
+            label="Download PDF Report / تحميل التقرير PDF",
+            data=pdf_report,
+            file_name=f"PalmShield_Report_{palm_id}.pdf",
+            mime="application/pdf"
+        )
+
+    except Exception as e:
+        st.warning("تعذر إنشاء تقرير PDF على الخادم الحالي، لكن التحليل يعمل بنجاح.")
+        st.text(f"PDF Error: {e}")
 
     st.divider()
 
@@ -433,5 +457,5 @@ if uploaded_files:
     for p in temp_paths:
         try:
             os.remove(p)
-        except:
+        except Exception:
             pass
